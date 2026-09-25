@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"slices"
 
 	"github.com/otrumb/safe-svc-diff/contract"
 	"github.com/santhosh-tekuri/jsonschema/v6"
@@ -55,12 +54,7 @@ func validateInvariants(document Document) error {
 			return fmt.Errorf("transaction safe mismatch: %w", ErrInvalid)
 		}
 		hashes = append(hashes, transaction.SafeTxHash)
-		if !slices.IsSorted(transaction.ConfirmationOwners) || slices.ContainsFunc(
-			transaction.ConfirmationOwners[1:],
-			func(owner string) bool {
-				return slices.Contains(transaction.ConfirmationOwners[:len(transaction.ConfirmationOwners)-1], owner)
-			},
-		) {
+		if !strictlySorted(transaction.ConfirmationOwners) {
 			return fmt.Errorf("confirmation owners not sorted unique: %w", ErrInvalid)
 		}
 	}
@@ -69,6 +63,9 @@ func validateInvariants(document Document) error {
 	}
 	if document.Capture.RecordsFetched != len(document.Transactions) {
 		return fmt.Errorf("record count mismatch: %w", ErrInvalid)
+	}
+	if document.Capture.RecordsFetched > document.Capture.MaxRecords {
+		return fmt.Errorf("record count exceeds limit: %w", ErrInvalid)
 	}
 	if document.Capture.Complete {
 		if document.Capture.CompletedAt == nil || document.Capture.IncompleteReason != nil || document.Capture.PagesFetched < 1 || document.Capture.AdvertisedCount == nil || *document.Capture.AdvertisedCount != document.Capture.RecordsFetched {

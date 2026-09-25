@@ -2,6 +2,7 @@ package snapshot_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -48,6 +49,63 @@ func TestCanonical_returns_fixture_bytes(t *testing.T) {
 	}
 	if string(got) != string(raw) {
 		t.Fatal("Canonical() changed canonical fixture")
+	}
+}
+
+func TestValidate_accepts_zero_to_many_sorted_unique_confirmation_owners(t *testing.T) {
+	for count := 0; count <= 4; count++ {
+		t.Run(fmt.Sprint(count), func(t *testing.T) {
+			raw := fixtureSnapshot(t, "01-identical.json", "before")
+			var document map[string]any
+			if err := json.Unmarshal(raw, &document); err != nil {
+				t.Fatal(err)
+			}
+			transactions := document["transactions"].([]any)
+			transaction := transactions[0].(map[string]any)
+			owners := make([]string, count)
+			for index := range owners {
+				owners[index] = fmt.Sprintf("0x%040x", index+1)
+			}
+			transaction["confirmationOwners"] = owners
+			encoded, err := json.Marshal(document)
+			if err != nil {
+				t.Fatal(err)
+			}
+			canonical, err := snapshot.Canonical(encoded)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := snapshot.Validate(canonical); err != nil {
+				t.Fatalf("Validate() error = %v", err)
+			}
+		})
+	}
+}
+
+func TestValidate_rejects_record_count_over_declared_limit(t *testing.T) {
+	raw := fixtureSnapshot(t, "02-added.json", "after")
+	var document map[string]any
+	if err := json.Unmarshal(raw, &document); err != nil {
+		t.Fatal(err)
+	}
+	capture := document["capture"].(map[string]any)
+	transactions := document["transactions"].([]any)
+	copy := transactions[0].(map[string]any)
+	copy["safeTxHash"] = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	document["transactions"] = append(transactions, copy)
+	capture["recordsFetched"] = float64(2)
+	capture["advertisedCount"] = float64(2)
+	capture["maxRecords"] = float64(1)
+	encoded, err := json.Marshal(document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	canonical, err := snapshot.Canonical(encoded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := snapshot.Validate(canonical); err == nil {
+		t.Fatal("Validate() accepted recordsFetched > maxRecords")
 	}
 }
 
