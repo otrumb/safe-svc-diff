@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/otrumb/safe-svc-diff/blob/v0.1.0/contract/snapshot-v1.schema.json",
+  "title": "safe-svc-diff snapshot v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "projectionVersion", "producer", "capture", "transactions"],
+  "properties": {
+    "schemaVersion": {"const": "safe-svc-diff.snapshot/v1"},
+    "projectionVersion": {"const": "safe-multisig/v1"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "capture": {"$ref": "#/$defs/capture"},
+    "transactions": {"type": "array", "items": {"$ref": "#/$defs/transaction"}}
+  },
+  "$defs": {
+    "address": {"type": "string", "pattern": "^0x[0-9a-f]{40}$"},
+    "hash": {"type": "string", "pattern": "^0x[0-9a-f]{64}$"},
+    "decimal": {"type": "string", "pattern": "^(0|[1-9][0-9]*)$"},
+    "timestamp": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$"},
+    "producer": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {"name": {"const": "safe-svc-capture"}, "version": {"type": "string", "minLength": 1}}
+    },
+    "query": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "value"],
+      "properties": {"name": {"type": "string", "minLength": 1}, "value": {"type": "string"}}
+    },
+    "capture": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sourceOrigin", "endpointPath", "safe", "query", "startedAt", "completedAt", "complete", "incompleteReason", "pagesFetched", "recordsFetched", "advertisedCount", "maxPages", "maxRecords", "maxPageBytes", "maxTotalBytes"],
+      "properties": {
+        "sourceOrigin": {"type": "string", "pattern": "^https://[a-z0-9.-]+(?::[0-9]+)?$"},
+        "endpointPath": {"type": "string", "pattern": "^/api/v2/safes/0x[0-9a-f]{40}/multisig-transactions/$"},
+        "safe": {"$ref": "#/$defs/address"},
+        "query": {"type": "array", "items": {"$ref": "#/$defs/query"}},
+        "startedAt": {"$ref": "#/$defs/timestamp"},
+        "completedAt": {"oneOf": [{"$ref": "#/$defs/timestamp"}, {"type": "null"}]},
+        "complete": {"type": "boolean"},
+        "incompleteReason": {"oneOf": [{"enum": ["http_failure", "network_failure", "retry_exhausted", "page_limit", "record_limit", "page_size_limit", "total_size_limit", "invalid_page", "unsafe_next_url", "pagination_conflict", "unstable_pagination"]}, {"type": "null"}]},
+        "pagesFetched": {"type": "integer", "minimum": 0}, "recordsFetched": {"type": "integer", "minimum": 0},
+        "advertisedCount": {"type": ["integer", "null"], "minimum": 0}, "maxPages": {"type": "integer", "minimum": 1},
+        "maxRecords": {"type": "integer", "minimum": 1}, "maxPageBytes": {"type": "integer", "minimum": 1}, "maxTotalBytes": {"type": "integer", "minimum": 1}
+      }
+    },
+    "transaction": {
+      "type": "object", "additionalProperties": false,
+      "required": ["safeTxHash", "safe", "to", "value", "dataSha256", "dataLength", "operation", "gasToken", "safeTxGas", "baseGas", "gasPrice", "refundReceiver", "nonce", "executionDate", "submissionDate", "modified", "blockNumber", "transactionHash", "proposer", "proposedByDelegate", "executor", "isExecuted", "isSuccessful", "ethGasPrice", "maxFeePerGas", "maxPriorityFeePerGas", "gasUsed", "fee", "payment", "confirmationsRequired", "confirmationOwners", "trusted"],
+      "properties": {
+        "safeTxHash": {"$ref": "#/$defs/hash"}, "safe": {"$ref": "#/$defs/address"}, "to": {"$ref": "#/$defs/address"}, "value": {"$ref": "#/$defs/decimal"},
+        "dataSha256": {"oneOf": [{"type": "string", "pattern": "^[0-9a-f]{64}$"}, {"type": "null"}]}, "dataLength": {"type": ["integer", "null"], "minimum": 0},
+        "operation": {"type": "integer", "minimum": 0}, "gasToken": {"$ref": "#/$defs/address"}, "safeTxGas": {"$ref": "#/$defs/decimal"}, "baseGas": {"$ref": "#/$defs/decimal"}, "gasPrice": {"$ref": "#/$defs/decimal"}, "refundReceiver": {"oneOf": [{"$ref": "#/$defs/address"}, {"type": "null"}]}, "nonce": {"$ref": "#/$defs/decimal"},
+        "executionDate": {"oneOf": [{"$ref": "#/$defs/timestamp"}, {"type": "null"}]}, "submissionDate": {"$ref": "#/$defs/timestamp"}, "modified": {"$ref": "#/$defs/timestamp"},
+        "blockNumber": {"type": ["integer", "null"], "minimum": 0}, "transactionHash": {"oneOf": [{"$ref": "#/$defs/hash"}, {"type": "null"}]},
+        "proposer": {"oneOf": [{"$ref": "#/$defs/address"}, {"type": "null"}]}, "proposedByDelegate": {"oneOf": [{"$ref": "#/$defs/address"}, {"type": "null"}]}, "executor": {"oneOf": [{"$ref": "#/$defs/address"}, {"type": "null"}]},
+        "isExecuted": {"type": "boolean"}, "isSuccessful": {"type": ["boolean", "null"]},
+        "ethGasPrice": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]}, "maxFeePerGas": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]}, "maxPriorityFeePerGas": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]},
+        "gasUsed": {"type": ["integer", "null"], "minimum": 0}, "fee": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]}, "payment": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]},
+        "confirmationsRequired": {"type": ["integer", "null"], "minimum": 0}, "confirmationOwners": {"type": "array", "items": {"$ref": "#/$defs/address"}}, "trusted": {"type": "boolean"}
+      }
+    }
+  }
+}
