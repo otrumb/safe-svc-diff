@@ -38,7 +38,7 @@ func Capture(ctx context.Context, options Options, client Client) (snapshot.Docu
 	safe := strings.ToLower(options.Safe)
 	endpoint := "/api/v2/safes/" + safe + "/multisig-transactions/"
 	current := *base
-	current.Path = strings.TrimRight(base.Path, "/") + endpoint
+	current.Path = strings.TrimRight(base.Path, "/") + "/api/v2/safes/" + options.Safe + "/multisig-transactions/"
 	query := current.Query()
 	for _, item := range queries {
 		query.Set(item.Name, item.Value)
