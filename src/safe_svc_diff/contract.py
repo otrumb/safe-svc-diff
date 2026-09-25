@@ -75,6 +75,13 @@ def _require_string(mapping: JsonObject, key: str) -> str:
     return value
 
 
+def _require_integer(mapping: JsonObject, key: str) -> int:
+    value = mapping[key]
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise SnapshotError(detail=f"{key} must be integer")
+    return value
+
+
 def _validate_invariants(raw: JsonObject) -> None:
     snapshot = Snapshot(raw=raw)
     capture = snapshot.capture
@@ -91,6 +98,8 @@ def _validate_invariants(raw: JsonObject) -> None:
         raise SnapshotError(detail="transactions must be sorted and unique")
     if capture["recordsFetched"] != len(snapshot.transactions):
         raise SnapshotError(detail="recordsFetched differs from transaction count")
+    if _require_integer(capture, "recordsFetched") > _require_integer(capture, "maxRecords"):
+        raise SnapshotError(detail="recordsFetched exceeds maxRecords")
     complete = capture["complete"]
     if complete is True:
         if (

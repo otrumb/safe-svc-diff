@@ -32,7 +32,7 @@
       "required": ["sourceOrigin", "endpointPath", "safe", "query", "startedAt", "completedAt", "complete", "incompleteReason", "pagesFetched", "recordsFetched", "advertisedCount", "maxPages", "maxRecords", "maxPageBytes", "maxTotalBytes"],
       "properties": {
         "sourceOrigin": {"type": "string", "pattern": "^https://[a-z0-9.-]+(?::[0-9]+)?$"},
-        "endpointPath": {"type": "string", "pattern": "^/api/v2/safes/0x[0-9a-f]{40}/multisig-transactions/$"},
+        "endpointPath": {"type": "string", "pattern": "^/(?:[^/?#]+/)*api/v2/safes/0x[0-9a-f]{40}/multisig-transactions/$"},
         "safe": {"$ref": "#/$defs/address"},
         "query": {"type": "array", "items": {"$ref": "#/$defs/query"}},
         "startedAt": {"$ref": "#/$defs/timestamp"},
