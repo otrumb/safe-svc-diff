@@ -5,22 +5,50 @@ on:
 permissions:
   contents: read
 jobs:
+  verify:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: {ref: '${{ github.sha }}'}
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        with: {go-version: '1.24.0', check-latest: false}
+      - uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6.4.3
+        with: {version: '0.11.6', enable-cache: false}
+      - name: Check Go formatting
+        shell: pwsh
+        run: |
+          $files = gofmt -l .
+          if ($files) { $files; exit 1 }
+      - run: go test -shuffle=on -count=1 ./...
+      - run: go vet ./...
+      - run: go build ./cmd/safe-svc-capture
+        env: {CGO_ENABLED: '0', GOTOOLCHAIN: local}
+      - run: uv sync --locked --all-groups
+      - run: uv run ruff format --check .
+      - run: uv run ruff check .
+      - run: uv run basedpyright
+      - run: uv run python -m unittest discover -s tests -v
+      - run: uv run python -m unittest tests.test_interop -v
+      - run: uv build
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: {ref: '${{ github.sha }}'}
       - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
-        with: {go-version: '1.24.0'}
+        with: {go-version: '1.24.0', check-latest: false}
       - uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6.4.3
-        with: {version: '0.11.6'}
+        with: {version: '0.11.6', enable-cache: false}
       - run: test "$GITHUB_REF_NAME" = v0.1.0
-      - run: go test ./... && uv sync --locked --all-groups && uv run python -m unittest discover -s tests -v
       - run: mkdir assets && CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o assets/safe-svc-capture_0.1.0_windows_amd64.exe ./cmd/safe-svc-capture && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o assets/safe-svc-capture_0.1.0_linux_amd64 ./cmd/safe-svc-capture
       - run: uv build --out-dir assets && cp contract/snapshot-v1.schema.json assets/ && cd assets && sha256sum * > SHA256SUMS
       - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with: {name: release-assets, path: assets/}
   release:
-    needs: build
+    needs: [verify, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
