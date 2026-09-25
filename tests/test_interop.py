@@ -3,10 +3,11 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
-from safe_svc_diff.contract import canonical_bytes, load_snapshot
+from safe_svc_diff.contract import SnapshotError, canonical_bytes, load_snapshot
 
 ROOT = Path(__file__).parents[1]
 PAIRS = ROOT / "tests/fixtures/pairs"
@@ -32,20 +33,18 @@ class InteropTest(unittest.TestCase):
             for side in ("before", "after"):
                 with self.subTest(path=path.name, side=side):
                     raw = canonical_bytes(fixture[side])
-                    target = ROOT / f"interop-{side}.json"
-                    target.write_bytes(raw)
-                    try:
+                    with tempfile.TemporaryDirectory(prefix="safe-svc-diff-interop-") as directory:
+                        target = Path(directory) / f"{path.stem}-{side}.json"
+                        target.write_bytes(raw)
                         go_valid = subprocess.run(
                             [str(self.binary), "validate", str(target)], check=False
                         ).returncode in {0, 3}
                         try:
                             load_snapshot(raw)
                             python_valid = True
-                        except Exception:
+                        except SnapshotError:
                             python_valid = False
                         self.assertEqual(go_valid, python_valid)
-                    finally:
-                        target.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
