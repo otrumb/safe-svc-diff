@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "safe-svc-diff"
+version = "0.1.0"
+description = "Canonical snapshots and offline diffs for Safe Transaction Service multisig history"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = ["jsonschema==4.25.1"]
+
+[project.scripts]
+safe-svc-diff = "safe_svc_diff.cli:entrypoint"
+
+[dependency-groups]
+dev = ["basedpyright==1.31.4", "ruff==0.13.2"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/safe_svc_diff"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"contract/snapshot-v1.schema.json" = "safe_svc_diff/snapshot-v1.schema.json"
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "contract", "tests", "README.md", "LICENSE", "pyproject.toml"]
+
+[tool.basedpyright]
+typeCheckingMode = "all"
+pythonVersion = "3.12"
+pythonPlatform = "All"
+include = ["src", "tests"]
+exclude = ["**/__pycache__", "**/.venv", "build", "dist"]
+reportUnusedCallResult = "none"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["COM812", "D203", "D213", "ISC001", "CPY001"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "D", "PLR2004", "SLF001"]
+
+[tool.ruff.format]
+quote-style = "double"
