@@ -24,7 +24,7 @@ var allowedQuery = map[string]string{
 }
 
 func ParseQuery(items []string) ([]Query, error) {
-	values := map[string]string{"limit": "200", "offset": "0", "ordering": "-nonce,-created", "trusted": "true"}
+	values := map[string]string{"limit": "200", "offset": "0", "ordering": "-nonce,-created", "trusted": "false"}
 	for _, item := range items {
 		name, value, found := strings.Cut(item, "=")
 		kind, allowed := allowedQuery[name]
