@@ -4,7 +4,7 @@ import json
 from urllib.parse import urlencode
 
 from safe_svc_diff.contract import canonical_bytes
-from safe_svc_diff.model import DiffResult, JsonObject
+from safe_svc_diff.model import DiffResult
 
 
 def render_json(result: DiffResult) -> str:

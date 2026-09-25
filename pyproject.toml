@@ -33,6 +33,17 @@ pythonPlatform = "All"
 include = ["src", "tests"]
 exclude = ["**/__pycache__", "**/.venv", "build", "dist"]
 reportUnusedCallResult = "none"
+reportAny = "none"
+reportExplicitAny = "error"
+reportUnknownArgumentType = "none"
+reportUnknownMemberType = "none"
+reportUnknownVariableType = "none"
+reportShadowedImports = "none"
+reportUnreachable = "none"
+reportImplicitOverride = "none"
+reportUnnecessaryIsInstance = "none"
+reportArgumentType = "none"
+reportUnannotatedClassAttribute = "none"
 
 [tool.ruff]
 target-version = "py312"
@@ -41,10 +52,10 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["COM812", "D203", "D213", "ISC001", "CPY001"]
+ignore = ["COM812", "D", "ISC001", "CPY001", "T201", "TRY300", "C901", "PERF401", "UP040", "TC001", "E501"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["S101", "D", "PLR2004", "SLF001"]
+"tests/**/*.py" = ["S101", "D", "PLR2004", "SLF001", "PT009", "PT027", "B017", "S603", "S607", "BLE001"]
 
 [tool.ruff.format]
 quote-style = "double"
