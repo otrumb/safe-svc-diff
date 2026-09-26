@@ -1,7 +1,9 @@
 package capture
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -42,69 +44,29 @@ func Capture(ctx context.Context, options Options, client Client) (snapshot.Docu
 	}
 	current.RawQuery = query.Encode()
 	started := client.Now().UTC().Format("2006-01-02T15:04:05.000000Z")
-	transactions := map[string]snapshot.Transaction{}
 	totalBytes := 0
 	pages := 0
-	var advertised *int
-	var incomplete *string
-	for {
-		if pages >= MaxPages {
-			reason := "page_limit"
-			incomplete = &reason
-			break
-		}
-		result, size, fetchErr := fetchPage(ctx, &current, client)
-		if fetchErr != nil {
-			if pages == 0 {
-				return snapshot.Document{}, fetchErr
-			}
-			var failure *FetchError
-			reason := "network_failure"
-			if errors.As(fetchErr, &failure) {
-				reason = failure.Reason
-			}
-			incomplete = &reason
-			break
-		}
-		totalBytes += size
-		if totalBytes > MaxTotalBytes {
-			reason := "total_size_limit"
-			incomplete = &reason
-			break
-		}
-		pages++
-		if advertised == nil {
-			count := result.Count
-			advertised = &count
-		} else if *advertised != result.Count {
+	transactions, advertised, incomplete, err := capturePass(ctx, current, client, &pages, &totalBytes, false)
+	if err != nil {
+		return snapshot.Document{}, err
+	}
+	if incomplete == nil {
+		verification, verificationCount, verificationReason, _ := capturePass(ctx, current, client, &pages, &totalBytes, true)
+		if verificationReason != nil {
+			incomplete = verificationReason
+		} else if advertised == nil || verificationCount == nil || *advertised != *verificationCount {
 			reason := "unstable_pagination"
 			incomplete = &reason
-			break
+		} else {
+			firstBytes, firstErr := projectedBytes(transactions)
+			verificationBytes, verificationErr := projectedBytes(verification)
+			if firstErr != nil || verificationErr != nil || !bytes.Equal(firstBytes, verificationBytes) {
+				reason := "unstable_pagination"
+				incomplete = &reason
+			}
 		}
-		incomplete = mergeResults(transactions, result.Results)
-		if incomplete != nil {
-			break
-		}
-		if result.Next == nil {
-			break
-		}
-		next, nextErr := ValidateNext(&current, *result.Next)
-		if nextErr != nil {
-			reason := "unsafe_next_url"
-			incomplete = &reason
-			break
-		}
-		current = *next
 	}
-	list := make([]snapshot.Transaction, 0, len(transactions))
-	for _, transaction := range transactions {
-		list = append(list, transaction)
-	}
-	sort.Slice(list, func(i, j int) bool { return list[i].SafeTxHash < list[j].SafeTxHash })
-	if incomplete == nil && (advertised == nil || len(list) != *advertised) {
-		reason := "unstable_pagination"
-		incomplete = &reason
-	}
+	list := sortedTransactions(transactions)
 	completed := client.Now().UTC().Format("2006-01-02T15:04:05.000000Z")
 	if incomplete != nil {
 		completed = ""
@@ -114,6 +76,77 @@ func Capture(ctx context.Context, options Options, client Client) (snapshot.Docu
 		document.Capture.CompletedAt = &completed
 	}
 	return document, nil
+}
+
+func capturePass(ctx context.Context, first url.URL, client Client, pages, totalBytes *int, verification bool) (map[string]snapshot.Transaction, *int, *string, error) {
+	current := first
+	transactions := map[string]snapshot.Transaction{}
+	var advertised *int
+	for {
+		if *pages >= MaxPages {
+			reason := "page_limit"
+			return transactions, advertised, &reason, nil
+		}
+		result, size, fetchErr := fetchPage(ctx, &current, client)
+		if fetchErr != nil {
+			if *pages == 0 && !verification {
+				return nil, nil, nil, fetchErr
+			}
+			var failure *FetchError
+			reason := "network_failure"
+			if errors.As(fetchErr, &failure) {
+				reason = failure.Reason
+			}
+			return transactions, advertised, &reason, nil
+		}
+		*totalBytes += size
+		if *totalBytes > MaxTotalBytes {
+			reason := "total_size_limit"
+			return transactions, advertised, &reason, nil
+		}
+		(*pages)++
+		if advertised == nil {
+			count := result.Count
+			advertised = &count
+		} else if *advertised != result.Count {
+			reason := "unstable_pagination"
+			return transactions, advertised, &reason, nil
+		}
+		if incomplete := mergeResults(transactions, result.Results); incomplete != nil {
+			return transactions, advertised, incomplete, nil
+		}
+		if result.Next == nil {
+			break
+		}
+		next, nextErr := ValidateNext(&current, *result.Next)
+		if nextErr != nil {
+			reason := "unsafe_next_url"
+			return transactions, advertised, &reason, nil
+		}
+		current = *next
+	}
+	if advertised == nil || len(transactions) != *advertised {
+		reason := "unstable_pagination"
+		return transactions, advertised, &reason, nil
+	}
+	return transactions, advertised, nil, nil
+}
+
+func sortedTransactions(transactions map[string]snapshot.Transaction) []snapshot.Transaction {
+	list := make([]snapshot.Transaction, 0, len(transactions))
+	for _, transaction := range transactions {
+		list = append(list, transaction)
+	}
+	sort.Slice(list, func(i, j int) bool { return list[i].SafeTxHash < list[j].SafeTxHash })
+	return list
+}
+
+func projectedBytes(transactions map[string]snapshot.Transaction) ([]byte, error) {
+	raw, err := json.Marshal(sortedTransactions(transactions))
+	if err != nil {
+		return nil, fmt.Errorf("marshal projected transactions: %w", err)
+	}
+	return snapshot.Canonical(raw)
 }
 
 func mergeResults(transactions map[string]snapshot.Transaction, results []upstreamTransaction) *string {
