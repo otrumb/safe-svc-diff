@@ -29,6 +29,10 @@ class SourcePolicyTest(unittest.TestCase):
         attributes = (ROOT / ".gitattributes").read_text()
         self.assertIn("*.go text eol=lf", attributes.splitlines())
 
+    def test_json_contracts_use_lf_in_windows_checkouts(self) -> None:
+        attributes = (ROOT / ".gitattributes").read_text()
+        self.assertIn("*.json text eol=lf", attributes.splitlines())
+
 
 if __name__ == "__main__":
     unittest.main()
