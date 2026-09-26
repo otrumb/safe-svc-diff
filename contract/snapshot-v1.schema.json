@@ -16,6 +16,8 @@
     "address": {"type": "string", "pattern": "^0x[0-9a-f]{40}$"},
     "hash": {"type": "string", "pattern": "^0x[0-9a-f]{64}$"},
     "decimal": {"type": "string", "pattern": "^(0|[1-9][0-9]*)$"},
+    "nonnegativeInteger": {"type": "integer", "minimum": 0, "maximum": 2147483647},
+    "positiveInteger": {"type": "integer", "minimum": 1, "maximum": 2147483647},
     "timestamp": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$"},
     "producer": {
       "type": "object", "additionalProperties": false,
@@ -39,9 +41,9 @@
         "completedAt": {"oneOf": [{"$ref": "#/$defs/timestamp"}, {"type": "null"}]},
         "complete": {"type": "boolean"},
         "incompleteReason": {"oneOf": [{"enum": ["http_failure", "network_failure", "retry_exhausted", "page_limit", "record_limit", "page_size_limit", "total_size_limit", "invalid_page", "unsafe_next_url", "pagination_conflict", "unstable_pagination"]}, {"type": "null"}]},
-        "pagesFetched": {"type": "integer", "minimum": 0}, "recordsFetched": {"type": "integer", "minimum": 0},
-        "advertisedCount": {"type": ["integer", "null"], "minimum": 0}, "maxPages": {"type": "integer", "minimum": 1},
-        "maxRecords": {"type": "integer", "minimum": 1}, "maxPageBytes": {"type": "integer", "minimum": 1}, "maxTotalBytes": {"type": "integer", "minimum": 1}
+        "pagesFetched": {"$ref": "#/$defs/nonnegativeInteger"}, "recordsFetched": {"$ref": "#/$defs/nonnegativeInteger"},
+        "advertisedCount": {"oneOf": [{"$ref": "#/$defs/nonnegativeInteger"}, {"type": "null"}]}, "maxPages": {"$ref": "#/$defs/positiveInteger"},
+        "maxRecords": {"$ref": "#/$defs/positiveInteger"}, "maxPageBytes": {"$ref": "#/$defs/positiveInteger"}, "maxTotalBytes": {"$ref": "#/$defs/positiveInteger"}
       }
     },
     "transaction": {
@@ -49,15 +51,15 @@
       "required": ["safeTxHash", "safe", "to", "value", "dataSha256", "dataLength", "operation", "gasToken", "safeTxGas", "baseGas", "gasPrice", "refundReceiver", "nonce", "executionDate", "submissionDate", "modified", "blockNumber", "transactionHash", "proposer", "proposedByDelegate", "executor", "isExecuted", "isSuccessful", "ethGasPrice", "maxFeePerGas", "maxPriorityFeePerGas", "gasUsed", "fee", "payment", "confirmationsRequired", "confirmationOwners", "trusted"],
       "properties": {
         "safeTxHash": {"$ref": "#/$defs/hash"}, "safe": {"$ref": "#/$defs/address"}, "to": {"$ref": "#/$defs/address"}, "value": {"$ref": "#/$defs/decimal"},
-        "dataSha256": {"oneOf": [{"type": "string", "pattern": "^[0-9a-f]{64}$"}, {"type": "null"}]}, "dataLength": {"type": ["integer", "null"], "minimum": 0},
-        "operation": {"type": "integer", "minimum": 0}, "gasToken": {"$ref": "#/$defs/address"}, "safeTxGas": {"$ref": "#/$defs/decimal"}, "baseGas": {"$ref": "#/$defs/decimal"}, "gasPrice": {"$ref": "#/$defs/decimal"}, "refundReceiver": {"oneOf": [{"$ref": "#/$defs/address"}, {"type": "null"}]}, "nonce": {"$ref": "#/$defs/decimal"},
+        "dataSha256": {"oneOf": [{"type": "string", "pattern": "^[0-9a-f]{64}$"}, {"type": "null"}]}, "dataLength": {"oneOf": [{"$ref": "#/$defs/nonnegativeInteger"}, {"type": "null"}]},
+        "operation": {"$ref": "#/$defs/nonnegativeInteger"}, "gasToken": {"oneOf": [{"$ref": "#/$defs/address"}, {"type": "null"}]}, "safeTxGas": {"$ref": "#/$defs/decimal"}, "baseGas": {"$ref": "#/$defs/decimal"}, "gasPrice": {"$ref": "#/$defs/decimal"}, "refundReceiver": {"oneOf": [{"$ref": "#/$defs/address"}, {"type": "null"}]}, "nonce": {"$ref": "#/$defs/decimal"},
         "executionDate": {"oneOf": [{"$ref": "#/$defs/timestamp"}, {"type": "null"}]}, "submissionDate": {"$ref": "#/$defs/timestamp"}, "modified": {"$ref": "#/$defs/timestamp"},
-        "blockNumber": {"type": ["integer", "null"], "minimum": 0}, "transactionHash": {"oneOf": [{"$ref": "#/$defs/hash"}, {"type": "null"}]},
+        "blockNumber": {"oneOf": [{"$ref": "#/$defs/nonnegativeInteger"}, {"type": "null"}]}, "transactionHash": {"oneOf": [{"$ref": "#/$defs/hash"}, {"type": "null"}]},
         "proposer": {"oneOf": [{"$ref": "#/$defs/address"}, {"type": "null"}]}, "proposedByDelegate": {"oneOf": [{"$ref": "#/$defs/address"}, {"type": "null"}]}, "executor": {"oneOf": [{"$ref": "#/$defs/address"}, {"type": "null"}]},
         "isExecuted": {"type": "boolean"}, "isSuccessful": {"type": ["boolean", "null"]},
         "ethGasPrice": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]}, "maxFeePerGas": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]}, "maxPriorityFeePerGas": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]},
-        "gasUsed": {"type": ["integer", "null"], "minimum": 0}, "fee": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]}, "payment": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]},
-        "confirmationsRequired": {"type": ["integer", "null"], "minimum": 0}, "confirmationOwners": {"type": "array", "items": {"$ref": "#/$defs/address"}}, "trusted": {"type": "boolean"}
+        "gasUsed": {"oneOf": [{"$ref": "#/$defs/nonnegativeInteger"}, {"type": "null"}]}, "fee": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]}, "payment": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]},
+        "confirmationsRequired": {"oneOf": [{"$ref": "#/$defs/nonnegativeInteger"}, {"type": "null"}]}, "confirmationOwners": {"type": "array", "items": {"$ref": "#/$defs/address"}}, "trusted": {"type": "boolean"}
       }
     }
   }

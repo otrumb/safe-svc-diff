@@ -10,6 +10,10 @@ ROOT = Path(__file__).parents[1]
 
 
 class ContractTest(unittest.TestCase):
+    def test_canonical_bytes_escape_line_and_paragraph_separators_like_go(self) -> None:
+        expected = (ROOT / "tests/fixtures/canonical/u2028-u2029.json").read_bytes()
+        self.assertEqual(canonical_bytes({"text": "line\u2028paragraph\u2029"}), expected)
+
     def test_valid_snapshot_round_trips_canonically(self) -> None:
         fixture = json.loads((ROOT / "tests/fixtures/pairs/01-identical.json").read_text())
         before = fixture["before"]
@@ -42,6 +46,53 @@ class ContractTest(unittest.TestCase):
         snapshot["capture"]["maxRecords"] = 1
         with self.assertRaises(SnapshotError):
             load_snapshot(canonical_bytes(snapshot))
+
+    def test_nullable_gas_token_is_valid_owned_snapshot_data(self) -> None:
+        fixture = json.loads((ROOT / "tests/fixtures/pairs/01-identical.json").read_text())
+        snapshot = fixture["before"]
+        snapshot["transactions"][0]["gasToken"] = None
+        loaded = load_snapshot(canonical_bytes(snapshot))
+        self.assertIsNone(loaded.transactions[0]["gasToken"])
+
+    def test_every_schema_integer_uses_portable_signed_32_bit_bound(self) -> None:
+        fixture = json.loads((ROOT / "tests/fixtures/pairs/01-identical.json").read_text())
+        integer_paths = (
+            ("capture", "pagesFetched"),
+            ("capture", "recordsFetched"),
+            ("capture", "advertisedCount"),
+            ("capture", "maxPages"),
+            ("capture", "maxRecords"),
+            ("capture", "maxPageBytes"),
+            ("capture", "maxTotalBytes"),
+            ("transactions", 0, "dataLength"),
+            ("transactions", 0, "operation"),
+            ("transactions", 0, "blockNumber"),
+            ("transactions", 0, "gasUsed"),
+            ("transactions", 0, "confirmationsRequired"),
+        )
+        for path in integer_paths:
+            for value, valid in ((2_147_483_647, True), (2_147_483_648, False), (10**100, False)):
+                with self.subTest(path=path, value=value):
+                    snapshot = json.loads(json.dumps(fixture["before"]))
+                    target = snapshot
+                    for part in path[:-1]:
+                        target = target[part]
+                    target[path[-1]] = value
+                    if path[:2] == ("capture", "recordsFetched"):
+                        snapshot["capture"]["maxRecords"] = max(value, 1)
+                    if path[:2] == ("capture", "advertisedCount"):
+                        snapshot["capture"]["recordsFetched"] = value
+                        snapshot["transactions"] = []
+                    if valid:
+                        if path[:2] in {
+                            ("capture", "recordsFetched"),
+                            ("capture", "advertisedCount"),
+                        }:
+                            continue
+                        load_snapshot(canonical_bytes(snapshot))
+                    else:
+                        with self.assertRaises(SnapshotError):
+                            load_snapshot(canonical_bytes(snapshot))
 
 
 if __name__ == "__main__":
