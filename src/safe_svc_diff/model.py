@@ -45,11 +45,12 @@ class Finding:
 
     def to_json(self) -> JsonObject:
         result: JsonObject = {"code": self.code}
+        if self.code == "FIELD_CHANGED":
+            result["before"] = self.before
+            result["after"] = self.after
         for name, value in (
             ("safeTxHash", self.safe_tx_hash),
             ("field", self.field),
-            ("before", self.before),
-            ("after", self.after),
             ("side", self.side),
             ("reason", self.reason),
         ):

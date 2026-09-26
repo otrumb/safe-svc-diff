@@ -22,6 +22,30 @@ class DiffTest(unittest.TestCase):
         self.assertEqual(before_raw, after_raw)
         self.assertEqual(compare(load_snapshot(before_raw), load_snapshot(after_raw)).exit_code, 0)
 
+    def test_nullable_field_changes_preserve_explicit_nulls(self) -> None:
+        fixture = json.loads((PAIRS / "01-identical.json").read_text())
+        before = fixture["before"]
+        after = fixture["after"]
+        address = "0x" + "2" * 40
+
+        before["transactions"][0]["gasToken"] = None
+        after["transactions"][0]["gasToken"] = address
+        null_to_value = compare(
+            load_snapshot(canonical_bytes(before)),
+            load_snapshot(canonical_bytes(after)),
+        )
+        self.assertEqual(null_to_value.findings[0].to_json()["before"], None)
+        self.assertEqual(null_to_value.findings[0].to_json()["after"], address)
+
+        before["transactions"][0]["gasToken"] = address
+        after["transactions"][0]["gasToken"] = None
+        value_to_null = compare(
+            load_snapshot(canonical_bytes(before)),
+            load_snapshot(canonical_bytes(after)),
+        )
+        self.assertEqual(value_to_null.findings[0].to_json()["before"], address)
+        self.assertEqual(value_to_null.findings[0].to_json()["after"], None)
+
     def test_all_fixture_pairs_match_expected_outcomes(self) -> None:
         for path in sorted(PAIRS.glob("*.json")):
             with self.subTest(path=path.name):
