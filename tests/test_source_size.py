@@ -25,6 +25,10 @@ class SourcePolicyTest(unittest.TestCase):
         ]
         self.assertEqual(paths, [ROOT / "contract/snapshot-v1.schema.json"])
 
+    def test_go_sources_use_lf_in_windows_checkouts(self) -> None:
+        attributes = (ROOT / ".gitattributes").read_text()
+        self.assertIn("*.go text eol=lf", attributes.splitlines())
+
 
 if __name__ == "__main__":
     unittest.main()
