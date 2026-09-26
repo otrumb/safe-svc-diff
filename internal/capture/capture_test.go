@@ -2,6 +2,7 @@ package capture
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -96,7 +97,8 @@ func TestMergeResults_accepts_exact_limit_and_rejects_excess(t *testing.T) {
 }
 
 func validUpstreamTransaction(hash string) upstreamTransaction {
-	return upstreamTransaction{SafeTxHash: hash, Safe: "0x1111111111111111111111111111111111111111", To: "0x2222222222222222222222222222222222222222", Value: "0", GasToken: "0x0000000000000000000000000000000000000000", SafeTxGas: "0", BaseGas: "0", GasPrice: "0", Nonce: "0", SubmissionDate: "2026-09-25T01:00:00Z", Modified: "2026-09-25T01:00:00Z"}
+	gasToken := "0x0000000000000000000000000000000000000000"
+	return upstreamTransaction{SafeTxHash: hash, Safe: "0x1111111111111111111111111111111111111111", To: "0x2222222222222222222222222222222222222222", Value: "0", GasToken: &gasToken, SafeTxGas: "0", BaseGas: "0", GasPrice: "0", Nonce: "0", SubmissionDate: "2026-09-25T01:00:00Z", Modified: "2026-09-25T01:00:00Z"}
 }
 
 func emptyClient() Client { return responseClient(`{"count":0,"next":null,"results":[]}`) }
@@ -121,6 +123,36 @@ func TestCapture_projects_single_page(t *testing.T) {
 	// Then
 	if err != nil || !document.Capture.Complete || document.Capture.RecordsFetched != 0 {
 		t.Fatalf("Capture()=%+v, %v", document, err)
+	}
+}
+
+func TestCapture_projects_null_gas_token_from_valid_upstream_fixture(t *testing.T) {
+	// Given
+	body, err := os.ReadFile(filepath.Join("..", "..", "tests", "fixtures", "upstream", "gas-token-null.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// When
+	document, err := Capture(context.Background(), captureOptions(), responseClient(string(body)))
+
+	// Then
+	if err != nil {
+		t.Fatalf("Capture() error = %v", err)
+	}
+	raw, err := json.Marshal(document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), `"gasToken":null`) {
+		t.Fatalf("snapshot gasToken is not null: %s", raw)
+	}
+	canonical, err := snapshot.Canonical(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := snapshot.Validate(canonical); err != nil {
+		t.Fatalf("nullable gasToken snapshot invalid: %v", err)
 	}
 }
 

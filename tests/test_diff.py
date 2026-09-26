@@ -11,6 +11,17 @@ PAIRS = Path(__file__).parent / "fixtures/pairs"
 
 
 class DiffTest(unittest.TestCase):
+    def test_nullable_gas_token_has_diff_and_canonical_parity(self) -> None:
+        fixture = json.loads((PAIRS / "01-identical.json").read_text())
+        before = fixture["before"]
+        after = fixture["after"]
+        before["transactions"][0]["gasToken"] = None
+        after["transactions"][0]["gasToken"] = None
+        before_raw = canonical_bytes(before)
+        after_raw = canonical_bytes(after)
+        self.assertEqual(before_raw, after_raw)
+        self.assertEqual(compare(load_snapshot(before_raw), load_snapshot(after_raw)).exit_code, 0)
+
     def test_all_fixture_pairs_match_expected_outcomes(self) -> None:
         for path in sorted(PAIRS.glob("*.json")):
             with self.subTest(path=path.name):

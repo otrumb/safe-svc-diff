@@ -40,7 +40,7 @@ type Transaction struct {
 	DataSHA256            *string  `json:"dataSha256"`
 	DataLength            *int     `json:"dataLength"`
 	Operation             int      `json:"operation"`
-	GasToken              string   `json:"gasToken"`
+	GasToken              *string  `json:"gasToken"`
 	SafeTxGas             string   `json:"safeTxGas"`
 	BaseGas               string   `json:"baseGas"`
 	GasPrice              string   `json:"gasPrice"`
