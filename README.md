@@ -20,6 +20,8 @@ Snapshots omit raw pages, calldata, origin text, decoded data, and signatures. T
 
 No RPC evidence, ABI decoding, signature verification, signing, broadcasting, dashboard, server, database, scheduler, or chain-truth claim. No PyPI publication.
 
-This is an independent MIT implementation based only on public API documentation and observed wire behavior, not current FSL-licensed source. See Safe's official [Transaction Service API reference](https://docs.safe.global/core-api/transaction-service-reference/gnosis) and [API overview](https://docs.safe.global/core-api/overview).
+This is an independently authored MIT implementation informed by public Safe API documentation and observed wire behavior. See [PROVENANCE.md](PROVENANCE.md) for dated sources and scope. This does not claim an auditable clean-room process or equivalence to any Safe source implementation.
+
+Snapshot integers use the portable inclusive range `0..2147483647`, matching Go `int` on supported 32-bit and 64-bit targets. Capture completeness requires two bounded reads of the same query with stable count and byte-identical canonical projected transaction sets. Resource limits apply across both reads; drift or verification failure writes an incomplete snapshot and exits 3.
 
 Release assets: Windows and Linux capture binaries, wheel, sdist, schema, and `SHA256SUMS`.

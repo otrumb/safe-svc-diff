@@ -46,11 +46,18 @@ class ReleasePolicyTest(unittest.TestCase):
             with self.subTest(asset=asset):
                 self.assertIn(asset, workflow)
 
-    def test_documentation_uses_checksum_address_and_clean_room_scope(self) -> None:
+    def test_documentation_uses_checksum_address_and_factual_provenance(self) -> None:
         readme = (ROOT / "README.md").read_text()
+        provenance = (ROOT / "PROVENANCE.md").read_text()
         self.assertIn("0x5298A93734C3D979eF1f23F78eBB871879A21F22", readme)
-        self.assertIn("independent MIT implementation", readme)
-        self.assertIn("public API documentation and observed wire behavior", readme)
+        self.assertIn("independently authored MIT implementation", readme)
+        self.assertIn("This statement describes authorship", provenance)
+        self.assertIn(
+            "https://docs.safe.global/core-api/transaction-service-reference/gnosis", provenance
+        )
+        self.assertIn("https://docs.safe.global/core-api/overview", provenance)
+        self.assertIn("2026-09-25", provenance)
+        self.assertNotIn("not current FSL", readme + provenance)
         self.assertNotIn("SAFE_API_KEY", readme)
 
 
