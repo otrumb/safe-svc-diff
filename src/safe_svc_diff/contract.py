@@ -47,9 +47,8 @@ def _decode(raw: bytes) -> JsonObject:
 
 
 def canonical_bytes(value: JsonValue) -> bytes:
-    return (
-        json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True) + "\n"
-    ).encode()
+    text = json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    return (text.replace("\u2028", "\\u2028").replace("\u2029", "\\u2029") + "\n").encode()
 
 
 def load_snapshot(raw: bytes) -> Snapshot:

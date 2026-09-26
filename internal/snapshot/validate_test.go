@@ -1,6 +1,7 @@
 package snapshot_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -49,6 +50,26 @@ func TestCanonical_returns_fixture_bytes(t *testing.T) {
 	}
 	if string(got) != string(raw) {
 		t.Fatal("Canonical() changed canonical fixture")
+	}
+}
+
+func TestCanonical_escapes_line_and_paragraph_separators_like_shared_fixture(t *testing.T) {
+	// Given
+	want, err := os.ReadFile(filepath.Join("..", "..", "tests", "fixtures", "canonical", "u2028-u2029.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw := []byte("{\"text\":\"line" + string(rune(0x2028)) + "paragraph" + string(rune(0x2029)) + "\"}")
+
+	// When
+	got, err := snapshot.Canonical(raw)
+
+	// Then
+	if err != nil {
+		t.Fatalf("Canonical() error = %v", err)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("Canonical() = %q, want shared bytes %q", got, want)
 	}
 }
 
