@@ -44,7 +44,7 @@ jobs:
         with: {version: '0.11.6', enable-cache: false}
       - run: test "$GITHUB_REF_NAME" = v0.1.0
       - run: mkdir assets && CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o assets/safe-svc-capture_0.1.0_windows_amd64.exe ./cmd/safe-svc-capture && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o assets/safe-svc-capture_0.1.0_linux_amd64 ./cmd/safe-svc-capture
-      - run: uv build --out-dir assets && cp contract/snapshot-v1.schema.json assets/ && cd assets && sha256sum * > SHA256SUMS
+      - run: uv build --out-dir assets && cp contract/snapshot-v1.schema.json assets/ && cd assets && sha256sum safe-svc-capture_0.1.0_windows_amd64.exe safe-svc-capture_0.1.0_linux_amd64 safe_svc_diff-0.1.0-py3-none-any.whl safe_svc_diff-0.1.0.tar.gz snapshot-v1.schema.json > SHA256SUMS
       - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with: {name: release-assets, path: assets/}
   release:
