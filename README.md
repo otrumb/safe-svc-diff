@@ -25,3 +25,8 @@ This is an independently authored MIT implementation informed by public Safe API
 Snapshot integers use the portable inclusive range `0..2147483647`, matching Go `int` on supported 32-bit and 64-bit targets. Capture completeness requires two bounded reads of the same query with stable count and byte-identical canonical projected transaction sets. Resource limits apply across both reads; drift or verification failure writes an incomplete snapshot and exits 3.
 
 Release assets: Windows and Linux capture binaries, wheel, sdist, schema, and `SHA256SUMS`.
+
+## Try and evaluate
+
+- [Public-data walkthrough](docs/WALKTHROUGH.md): genuine anonymous capture plus deterministic synthetic offline replay in under 10 minutes.
+- [Pilot guide](docs/PILOT.md): consent choices, blank session notes, feedback prompts, and honest outreach copy.
