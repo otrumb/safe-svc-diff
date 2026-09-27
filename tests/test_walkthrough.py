@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import tempfile
 import unittest
@@ -69,6 +70,36 @@ class WalkthroughTest(unittest.TestCase):
         self.assertEqual(first.stdout, second.stdout)
         report = json.loads(first.stdout)
         self.assertGreater(len(report["findings"]), 0)
+
+    def test_posix_diff_contract_captures_exit_status_before_comparing_reports(self) -> None:
+        walkthrough = (ROOT / "docs/WALKTHROUGH.md").read_text()
+        match = re.search(
+            r"```sh\n(?P<commands>.*?cmp report-1\.json report-2\.json\n)```",
+            walkthrough.rsplit("POSIX:", 1)[1],
+            re.DOTALL,
+        )
+        if match is None:
+            self.fail("POSIX walkthrough contract not found")
+        commands = match.group("commands")
+        lines = [line.strip() for line in commands.splitlines()]
+
+        self.assertEqual(lines.count("set +e"), 2)
+        self.assertEqual(lines.count("set -e"), 2)
+        self.assertEqual(
+            [line for line in lines if line.startswith("uv run --offline safe-svc-diff diff")],
+            [
+                "uv run --offline safe-svc-diff diff before.json after.json --format json > report-1.json",
+                "uv run --offline safe-svc-diff diff before.json after.json --format json > report-2.json",
+            ],
+        )
+        self.assertEqual(
+            [line for line in lines if line.startswith('test "$status" -eq')],
+            ['test "$status" -eq 1', 'test "$status" -eq 1'],
+        )
+        self.assertEqual(lines.count("status=$?"), 2)
+        self.assertEqual(lines[-1], "cmp report-1.json report-2.json")
+        self.assertLess(lines.index("set +e"), lines.index("set -e"))
+        self.assertGreater(lines.index("cmp report-1.json report-2.json"), lines.index("set -e"))
 
 
 if __name__ == "__main__":

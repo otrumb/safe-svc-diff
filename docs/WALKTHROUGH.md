@@ -101,8 +101,16 @@ POSIX:
 ./safe-svc-capture validate after.json
 uv run --offline safe-svc-diff validate before.json
 uv run --offline safe-svc-diff validate after.json
-uv run --offline safe-svc-diff diff before.json after.json --format json > report-1.json && exit 1 || test $? -eq 1
-uv run --offline safe-svc-diff diff before.json after.json --format json > report-2.json && exit 1 || test $? -eq 1
+set +e
+uv run --offline safe-svc-diff diff before.json after.json --format json > report-1.json
+status=$?
+set -e
+test "$status" -eq 1
+set +e
+uv run --offline safe-svc-diff diff before.json after.json --format json > report-2.json
+status=$?
+set -e
+test "$status" -eq 1
 cmp report-1.json report-2.json
 ```
 
